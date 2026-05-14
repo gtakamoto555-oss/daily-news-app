@@ -137,7 +137,7 @@ const __dirname = path.dirname(__filename);
 
 // --- Reactフロントエンドの配信（本番環境用） ---
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.get('*', (req, res) => {
+app.app.use((req, res) => { (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
