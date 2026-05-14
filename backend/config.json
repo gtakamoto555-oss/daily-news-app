@@ -1,0 +1,32 @@
+{
+  "geminiApiKey": "AIzaSyAgQVJcKmNJX19-WxNYE4nhoUSLOjZafjI",
+  "email": {
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "secure": false,
+    "user": "gtakamoto555@gmail.com",
+    "pass": "mqzf zgig kmyt xfkq",
+    "from": "",
+    "to": "gtakamoto555@gmail.com"
+  },
+  "news": {
+    "sources": [
+      {
+        "url": "https://news.yahoo.co.jp/rss/topics/it.xml",
+        "name": "Yahoo IT"
+      },
+      {
+        "url": "https://news.yahoo.co.jp/rss/topics/business.xml",
+        "name": "Yahoo Business"
+      }
+    ],
+    "keywords": [
+      "AI",
+      "教育",
+      "SNSマーケティング"
+    ]
+  },
+  "schedule": {
+    "time": "07:00"
+  }
+}
