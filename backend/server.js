@@ -16,14 +16,14 @@ app.use(express.json());
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB Cloud!');
-    
+
     // 最初の1回目の起動時：ローカルのconfig.jsonからクラウドにお引越しする
     const userCount = await User.countDocuments();
     if (userCount === 0) {
       console.log('No users found in database. Migrating from local config.json...');
       const oldConfig = await getConfig();
       const hashedPassword = await bcrypt.hash('password123', 10);
-      
+
       const firstUser = new User({
         email: oldConfig.email.to || 'test@example.com',
         password: hashedPassword,
@@ -54,10 +54,10 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ error: 'ユーザーが見つかりません' });
-    
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: 'パスワードが違います' });
-    
+
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
     res.json({ token, user: { email: user.email } });
   } catch (error) {
@@ -71,7 +71,7 @@ app.post('/api/cron', async (req, res) => {
   const now = new Date();
   const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
   const currentHourMinute = `${String(jstTime.getUTCHours()).padStart(2, '0')}:${String(jstTime.getUTCMinutes()).padStart(2, '0')}`;
-  
+
   // 非同期で処理を開始（レスポンスはすぐに返す）
   runAllScheduledJobs(currentHourMinute);
   res.json({ success: true, message: `Cron triggered for time: ${currentHourMinute}` });
@@ -99,12 +99,12 @@ app.post('/api/config', async (req, res) => {
   try {
     const user = await User.findOne();
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
+
     // UIからの更新データを保存
     if (req.body.geminiApiKey !== undefined) user.settings.ai.geminiApiKey = req.body.geminiApiKey;
     if (req.body.news) user.settings.news = req.body.news;
     if (req.body.schedule) user.settings.schedule = req.body.schedule;
-    
+
     // AIプロバイダ等の更新（あとでUIに追加します）
     if (req.body.aiProvider) user.settings.ai.provider = req.body.aiProvider;
     if (req.body.chatGptApiKey !== undefined) user.settings.ai.chatGptApiKey = req.body.chatGptApiKey;
@@ -121,7 +121,7 @@ app.post('/api/run', async (req, res) => {
   try {
     const user = await User.findOne();
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
+
     await runNewsJobForUser(user);
     res.json({ success: true, message: 'Job finished successfully.' });
   } catch (error) {
@@ -137,7 +137,7 @@ const __dirname = path.dirname(__filename);
 
 // --- Reactフロントエンドの配信（本番環境用） ---
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.app.use((req, res) => { (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
