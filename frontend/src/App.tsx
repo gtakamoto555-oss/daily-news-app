@@ -218,12 +218,12 @@ function App() {
 
         {config.aiProvider === 'gemini' && (
           <div className="form-group">
-            <label>Google Gemini API キー</label>
+            <label>Google Gemini API キー <span style={{fontSize: '0.8rem', color: '#888'}}>（※未入力の場合は自動で設定されます）</span></label>
             <input 
               type="password" 
               value={config.geminiApiKey} 
               onChange={e => setConfig({...config, geminiApiKey: e.target.value})} 
-              placeholder="AIzaSy..."
+              placeholder="空欄のままでOKです"
             />
           </div>
         )}
