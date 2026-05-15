@@ -39,8 +39,9 @@ export async function summarizeArticles(articles, aiConfig) {
       
     } else {
       // Default to Gemini
-      if (!geminiApiKey) throw new Error('Gemini API Key is not set.');
-      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+      const keyToUse = geminiApiKey || process.env.GEMINI_API_KEY;
+      if (!keyToUse) throw new Error('Gemini API Key is not set.');
+      const ai = new GoogleGenAI({ apiKey: keyToUse });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
