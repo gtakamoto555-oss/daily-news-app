@@ -1,7 +1,11 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-dotenv.config();
+import dns from 'dns';
 
+// Render環境でのIPv6エラー（ENETUNREACH）を防ぐため、常にIPv4を優先する
+dns.setDefaultResultOrder('ipv4first');
+
+dotenv.config();
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
