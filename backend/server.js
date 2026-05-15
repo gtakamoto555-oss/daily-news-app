@@ -65,6 +65,55 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// 新規登録機能
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ error: 'このメールアドレスは既に登録されています' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      settings: {
+        news: {
+          sources: [
+            { url: "https://news.yahoo.co.jp/rss/topics/it.xml", name: "Yahoo IT" },
+            { url: "https://news.yahoo.co.jp/rss/topics/business.xml", name: "Yahoo Business" }
+          ],
+          keywords: ["AI", "テクノロジー"]
+        },
+        schedule: { time: "07:00" },
+        ai: { provider: 'gemini', geminiApiKey: '', chatGptApiKey: '', claudeApiKey: '' }
+      }
+    });
+
+    await newUser.save();
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+    res.json({ token, user: { email: newUser.email } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 認証ミドルウェア
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'ログインが必要です' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const user = await User.findById(decoded.userId);
+    if (!user) return res.status(404).json({ error: 'ユーザーが見つかりません' });
+    req.user = user;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'トークンが無効です' });
+  }
+};
+
 // 外部アラーム（cron-job.org等）から毎分叩かれるエンドポイント
 app.post('/api/cron', async (req, res) => {
   // 現在の時刻を HH:MM 形式で取得 (日本時間)
@@ -77,11 +126,10 @@ app.post('/api/cron', async (req, res) => {
   res.json({ success: true, message: `Cron triggered for time: ${currentHourMinute}` });
 });
 
-// フロントエンドとの一時的な通信用（あとでログイン機能に差し替えます）
-app.get('/api/config', async (req, res) => {
+// フロントエンドとの通信用（認証必須）
+app.get('/api/config', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findOne(); // 最初に見つかったユーザー（自分）のデータを返す
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const user = req.user;
     res.json({
       geminiApiKey: user.settings.ai.geminiApiKey,
       chatGptApiKey: user.settings.ai.chatGptApiKey,
@@ -95,17 +143,16 @@ app.get('/api/config', async (req, res) => {
   }
 });
 
-app.post('/api/config', async (req, res) => {
+app.post('/api/config', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findOne();
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
+    const user = req.user;
+    
     // UIからの更新データを保存
     if (req.body.geminiApiKey !== undefined) user.settings.ai.geminiApiKey = req.body.geminiApiKey;
     if (req.body.news) user.settings.news = req.body.news;
     if (req.body.schedule) user.settings.schedule = req.body.schedule;
-
-    // AIプロバイダ等の更新（あとでUIに追加します）
+    
+    // AIプロバイダ等の更新
     if (req.body.aiProvider) user.settings.ai.provider = req.body.aiProvider;
     if (req.body.chatGptApiKey !== undefined) user.settings.ai.chatGptApiKey = req.body.chatGptApiKey;
     if (req.body.claudeApiKey !== undefined) user.settings.ai.claudeApiKey = req.body.claudeApiKey;
@@ -117,12 +164,9 @@ app.post('/api/config', async (req, res) => {
   }
 });
 
-app.post('/api/run', async (req, res) => {
+app.post('/api/run', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findOne();
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    await runNewsJobForUser(user);
+    await runNewsJobForUser(req.user);
     res.json({ success: true, message: 'Job finished successfully.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
