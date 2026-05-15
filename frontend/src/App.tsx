@@ -5,6 +5,7 @@ function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -13,11 +14,12 @@ function App() {
   const [message, setMessage] = useState({ text: '', type: '' });
   const [newKeyword, setNewKeyword] = useState('');
 
-  // ログイン処理
-  const handleLogin = async () => {
+  // ログイン・新規登録処理
+  const handleAuth = async () => {
     setMessage({ text: '', type: '' });
     try {
-      const res = await fetch('/api/auth/login', {
+      const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -44,9 +46,9 @@ function App() {
   useEffect(() => {
     if (token) {
       setLoading(true);
-      // 今回は簡易的にトークン検証なしで最初のユーザーを返すAPIを使いますが、
-      // 実際は headers: { 'Authorization': `Bearer ${token}` } を送ります
-      fetch('/api/config')
+      fetch('/api/config', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
         .then(res => res.json())
         .then(data => {
           setConfig(data);
@@ -66,7 +68,10 @@ function App() {
     try {
       const res = await fetch('/api/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(config)
       });
       if (res.ok) {
@@ -84,7 +89,10 @@ function App() {
     setRunning(true);
     setMessage({ text: 'テスト実行中...（ニュース取得と要約を行っています）', type: 'success' });
     try {
-      const res = await fetch('/api/run', { method: 'POST' });
+      const res = await fetch('/api/run', { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         setMessage({ text: '手動実行が完了しました！メールが届いているか確認してください。', type: 'success' });
       } else {
@@ -132,13 +140,12 @@ function App() {
     setConfig({ ...config, news: { ...config.news, sources: newSources } });
   };
 
-  // ログイン画面の表示
   if (!token) {
     return (
       <div className="app-container" style={{ maxWidth: '400px', marginTop: '10vh' }}>
         <header>
           <h1>Daily News AI</h1>
-          <p>クラウド版ログイン</p>
+          <p>クラウド版 {isRegistering ? '新規会員登録' : 'ログイン'}</p>
         </header>
         {message.text && <div className={`notification ${message.type}`}>{message.text}</div>}
         <div className="card">
@@ -150,7 +157,23 @@ function App() {
             <label>パスワード</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
-          <button onClick={handleLogin} style={{ width: '100%', marginTop: '1rem' }}>ログイン</button>
+          <button onClick={handleAuth} style={{ width: '100%', marginTop: '1rem', marginBottom: '1rem' }}>
+            {isRegistering ? '登録してはじめる' : 'ログイン'}
+          </button>
+          
+          <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.9rem' }}>
+            <button 
+              type="button" 
+              className="secondary" 
+              style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: 0 }}
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setMessage({ text: '', type: '' });
+              }}
+            >
+              {isRegistering ? 'すでにアカウントをお持ちの方（ログイン）' : '初めての方はこちら（新規会員登録）'}
+            </button>
+          </div>
         </div>
       </div>
     );
