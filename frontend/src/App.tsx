@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import './index.css';
 
+const PRESET_FEEDS = [
+  { id: 'yahoo_top', label: 'Yahoo!ニュース (主要)', name: 'Yahoo 主要', url: 'https://news.yahoo.co.jp/rss/topics/top-picks.xml' },
+  { id: 'yahoo_it', label: 'Yahoo!ニュース (IT・科学)', name: 'Yahoo IT', url: 'https://news.yahoo.co.jp/rss/topics/it.xml' },
+  { id: 'yahoo_biz', label: 'Yahoo!ニュース (経済)', name: 'Yahoo 経済', url: 'https://news.yahoo.co.jp/rss/topics/business.xml' },
+  { id: 'yahoo_world', label: 'Yahoo!ニュース (国際)', name: 'Yahoo 国際', url: 'https://news.yahoo.co.jp/rss/topics/world.xml' },
+  { id: 'nhk_top', label: 'NHKニュース (主要)', name: 'NHK 主要', url: 'https://www.nhk.or.jp/rss/news/cat0.xml' },
+  { id: 'itmedia', label: 'ITmedia (総合)', name: 'ITmedia', url: 'https://rss.itmedia.co.jp/rss/2.0/itmedia_all.xml' },
+  { id: 'gigazine', label: 'GIGAZINE', name: 'GIGAZINE', url: 'https://gigazine.net/news/rss_2.0/' }
+];
+
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [email, setEmail] = useState('');
@@ -283,7 +293,31 @@ function App() {
               <button type="button" className="secondary" onClick={() => removeSource(i)}>削除</button>
             </div>
           ))}
-          <button type="button" className="secondary" onClick={addSource} style={{ width: 'fit-content', marginTop: '0.5rem' }}>+ RSSを追加</button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+            <select 
+              value=""
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const preset = PRESET_FEEDS.find(p => p.id === e.target.value);
+                if (preset) {
+                  setConfig({
+                    ...config,
+                    news: { ...config.news, sources: [...config.news.sources, { name: preset.name, url: preset.url }] }
+                  });
+                }
+                e.target.value = "";
+              }}
+              style={{ flex: 1, minWidth: '200px', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            >
+              <option value="">▼ 有名なサイトから選んで追加...</option>
+              {PRESET_FEEDS.map(p => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+            <button type="button" className="secondary" onClick={addSource} style={{ width: 'fit-content' }}>
+              ＋ 手動でURLを追加
+            </button>
+          </div>
         </div>
       </div>
 
